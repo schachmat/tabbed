@@ -160,6 +160,7 @@ static int nclients = 0, sel = -1, lastsel = -1;
 static int (*xerrorxlib)(Display *, XErrorEvent *);
 static int cmd_append_pos = 0;
 static char winid[64];
+static char clientbin[64];
 static char **cmd = NULL;
 static char *wmname = "tabbed";
 static const char *geometry = NULL;
@@ -239,6 +240,9 @@ clientmessage(const XEvent *e) {
 	if(ev->message_type == wmatom[WMProtocols]
 			&& ev->data.l[0] == wmatom[WMDelete]) {
 		running = False;
+	} else if(ev->message_type == wmatom[WMSelectTab]) {
+		Arg a = {.i = ev->data.l[0]};
+		move(&a);
 	}
 }
 
@@ -905,6 +909,7 @@ setcmd(int argc, char *argv[], int replace) {
 	cmd[(replace > 0)? replace : argc] = winid;
 	cmd_append_pos = argc + !replace;
 	cmd[cmd_append_pos] = cmd[cmd_append_pos+1] = NULL;
+	strncpy(clientbin, cmd[0], 63);
 }
 
 void
