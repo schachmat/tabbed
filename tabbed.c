@@ -1099,6 +1099,7 @@ unmanage(int c) {
 		} else if(lastsel > c) {
 			lastsel--;
 		}
+		lastsel = MIN(lastsel, nclients - 1);
 
 		if(c == sel) {
 			/* Note that focus() will never set lastsel == sel,
@@ -1244,11 +1245,6 @@ main(int argc, char *argv[]) {
 	case 's':
 		doinitspawn = False;
 		break;
-	case 'v':
-		die("tabbed-"VERSION", © 2009-2012"
-			" tabbed engineers, see LICENSE"
-			" for details.\n");
-		break;
 	case 't':
 		selbgcolor = EARGF(usage());
 		break;
@@ -1260,6 +1256,11 @@ main(int argc, char *argv[]) {
 		break;
 	case 'U':
 		normfgcolor = EARGF(usage());
+		break;
+	case 'v':
+		die("tabbed-"VERSION", © 2009-2012"
+			" tabbed engineers, see LICENSE"
+			" for details.\n");
 		break;
 	default:
 	case 'h':
