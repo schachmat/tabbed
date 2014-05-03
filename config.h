@@ -1,11 +1,11 @@
 /* See LICENSE file for copyright and license details. */
 
 /* appearance */
-static const char font[]        = "DejaVu Sans Mono:pixelsize=15:antialias=false:autohint=false";
-static const char* normbgcolor  = "#eee8d5";
-static const char* normfgcolor  = "#6c71c4";
-static const char* selbgcolor   = "#fdf6e3";
-static const char* selfgcolor   = "#dc322f";
+static const char font[]        = "DejaVu Sans Mono:pixelsize=16:antialias=false:autohint=false";
+static const char* normbgcolor  = "#073642";
+static const char* normfgcolor  = "#93a1a1";
+static const char* selbgcolor   = "#586e75";
+static const char* selfgcolor   = "#eee8d5";
 static const char before[]      = "<";
 static const char after[]       = ">";
 static const int  tabwidth      = 180;
