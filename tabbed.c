@@ -66,6 +66,7 @@ typedef struct {
 	int x, y, w, h;
 	unsigned long norm[ColLast];
 	unsigned long sel[ColLast];
+	unsigned long urg[ColLast];
 	Drawable drawable;
 	GC gc;
 	struct {
@@ -81,7 +82,7 @@ typedef struct Client {
 	char name[256];
 	Window win;
 	int tabx;
-	Bool mapped;
+	Bool urgent;
 	Bool closed;
 } Client;
 
@@ -362,7 +363,7 @@ drawbar(void) {
 				dc.w = width - (n - 1) * tabwidth;
 			}
 		} else {
-			col = dc.norm;
+			col = clients[c]->urgent ? dc.urg : dc.norm;
 		}
 		drawtext(clients[c]->name, col);
 		dc.x += dc.w;
@@ -438,6 +439,7 @@ void
 focus(int c) {
 	char buf[BUFSIZ] = "tabbed-"VERSION" ::";
 	size_t i, n;
+	XWMHints* wmh;
 
 	/* If c, sel and clients are -1, raise tabbed-win itself */
 	if(nclients == 0) {
@@ -465,6 +467,12 @@ focus(int c) {
 	if(sel != c) {
 		lastsel = sel;
 		sel = c;
+		if(clients[c]->urgent && (wmh = XGetWMHints(dpy, clients[c]->win))) {
+			wmh->flags &= ~XUrgencyHint;
+			XSetWMHints(dpy, clients[c]->win, wmh);
+			clients[c]->urgent = False;
+			XFree(wmh);
+		}
 	}
 
 	drawbar();
@@ -808,6 +816,7 @@ movetab(const Arg *arg) {
 void
 propertynotify(const XEvent *e) {
 	const XPropertyEvent *ev = &e->xproperty;
+	XWMHints *wmh;
 	int c;
 	char* selection = NULL;
 	Arg arg;
@@ -822,6 +831,21 @@ propertynotify(const XEvent *e) {
 			arg.v = cmd;
 			spawn(&arg);
 		}
+	} else if(ev->state == PropertyNewValue && ev->atom == XA_WM_HINTS
+			&& (c = getclient(ev->window)) > -1
+			&& (wmh = XGetWMHints(dpy, clients[c]->win))) {
+		if(wmh->flags & XUrgencyHint) {
+			if(c != sel) {
+				clients[c]->urgent = True;
+				drawbar();
+			}
+			XFree(wmh);
+			if((wmh = XGetWMHints(dpy, win))) {
+				wmh->flags |= XUrgencyHint;
+				XSetWMHints(dpy, win, wmh);
+			}
+		}
+		XFree(wmh);
 	} else if(ev->state != PropertyDelete && ev->atom == XA_WM_NAME
 			&& (c = getclient(ev->window)) > -1) {
 		updatetitle(c);
@@ -922,6 +946,7 @@ setcmd(int argc, char *argv[], int replace) {
 void
 setup(void) {
 	int bitm, tx, ty, tw, th, dh, dw, isfixed;
+	XWMHints *wmh;
 	XClassHint class_hint;
 	XSizeHints *size_hint;
 
@@ -981,6 +1006,8 @@ setup(void) {
 	dc.norm[ColFG] = getcolor(normfgcolor);
 	dc.sel[ColBG] = getcolor(selbgcolor);
 	dc.sel[ColFG] = getcolor(selfgcolor);
+	dc.urg[ColBG] = getcolor(urgbgcolor);
+	dc.urg[ColFG] = getcolor(urgfgcolor);
 	dc.drawable = XCreatePixmap(dpy, root, ww, wh,
 			DefaultDepth(dpy, screen));
 	dc.gc = XCreateGC(dpy, root, 0, 0);
@@ -1009,8 +1036,10 @@ setup(void) {
 		size_hint->min_width = size_hint->max_width = ww;
 		size_hint->min_height = size_hint->max_height = wh;
 	}
-	XSetWMProperties(dpy, win, NULL, NULL, NULL, 0, size_hint, NULL, NULL);
+	wmh = XAllocWMHints();
+	XSetWMProperties(dpy, win, NULL, NULL, NULL, 0, size_hint, wmh, NULL);
 	XFree(size_hint);
+	XFree(wmh);
 
 	XSetWMProtocols(dpy, win, &wmatom[WMDelete], 1);
 
@@ -1071,9 +1100,10 @@ unmanage(int c) {
 		return;
 	}
 
-	if(!nclients) {
+	if(!nclients)
 		return;
-	} else if(c == 0) {
+
+	if(c == 0) {
 		/* First client. */
 		nclients--;
 		free(clients[0]);
@@ -1092,36 +1122,25 @@ unmanage(int c) {
 	}
 
 	if(nclients <= 0) {
-		sel = -1;
-		lastsel = -1;
+		lastsel = sel = -1;
 
-		if (closelastclient) {
+		if(closelastclient) {
 			running = False;
-		} else if (fillagain && running) {
+		} else if(fillagain && running) {
 			spawn(NULL);
 		}
 	} else {
-		if(c == lastsel) {
-			lastsel = -1;
+		if(lastsel >= nclients) {
+			lastsel = nclients - 1;
 		} else if(lastsel > c) {
 			lastsel--;
 		}
-		lastsel = MIN(lastsel, nclients - 1);
 
 		if(c == sel) {
-			/* Note that focus() will never set lastsel == sel,
-			 * so if here lastsel == sel, it was decreased by above if() clause
-			 * and was actually (sel + 1) before.
-			 */
-			if(lastsel > 0) {
-				focus(lastsel);
-			} else {
-				focus(0);
-				lastsel = 1;
-			}
+			focus(lastsel);
 		} else {
 			if(sel > c)
-				sel -= 1;
+				sel--;
 			if(sel >= nclients)
 				sel = nclients - 1;
 
@@ -1211,7 +1230,8 @@ char *argv0;
 void
 usage(void) {
 	die("usage: %s [-dfhsv] [-g geometry] [-n name] [-p [s+/-]pos] [-r narg] "
-		"[-u color] [-U color] [-t color] [-T color] command...\n", argv0);
+		"[-o color] [-O color] [-t color] [-T color] [-u color] [-U color] "
+		"command...\n", argv0);
 }
 
 int
@@ -1252,6 +1272,12 @@ main(int argc, char *argv[]) {
 	case 's':
 		doinitspawn = False;
 		break;
+	case 'o':
+		normbgcolor = EARGF(usage());
+		break;
+	case 'O':
+		normfgcolor = EARGF(usage());
+		break;
 	case 't':
 		selbgcolor = EARGF(usage());
 		break;
@@ -1259,13 +1285,13 @@ main(int argc, char *argv[]) {
 		selfgcolor = EARGF(usage());
 		break;
 	case 'u':
-		normbgcolor = EARGF(usage());
+		urgbgcolor = EARGF(usage());
 		break;
 	case 'U':
-		normfgcolor = EARGF(usage());
+		urgfgcolor = EARGF(usage());
 		break;
 	case 'v':
-		die("tabbed-"VERSION", © 2009-2012"
+		die("tabbed-"VERSION", © 2009-2014"
 			" tabbed engineers, see LICENSE"
 			" for details.\n");
 		break;
