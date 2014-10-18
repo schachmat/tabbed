@@ -93,11 +93,12 @@ static void clientmessage(const XEvent *e);
 static void configurenotify(const XEvent *e);
 static void configurerequest(const XEvent *e);
 static void createnotify(const XEvent *e);
+static void unmapnotify(const XEvent *e);
 static void destroynotify(const XEvent *e);
 static void die(const char *errstr, ...);
 static void drawbar(void);
 static void drawtext(const char *text, unsigned long col[ColLast]);
-static void *emallocz(size_t size);
+static void *ecalloc(size_t n, size_t size);
 static void *erealloc(void *o, size_t size);
 static void expose(const XEvent *e);
 static void focus(int c);
@@ -141,6 +142,7 @@ static void (*handler[LASTEvent]) (const XEvent *) = {
 	[ConfigureNotify] = configurenotify,
 	[ConfigureRequest] = configurerequest,
 	[CreateNotify] = createnotify,
+	[UnmapNotify] = unmapnotify,
 	[DestroyNotify] = destroynotify,
 	[Expose] = expose,
 	[FocusIn] = focusin,
@@ -290,6 +292,15 @@ createnotify(const XEvent *e) {
 }
 
 void
+unmapnotify(const XEvent *e) {
+	const XUnmapEvent *ev = &e->xunmap;
+	int c;
+
+	if((c = getclient(ev->window)) > -1)
+		unmanage(c);
+}
+
+void
 destroynotify(const XEvent *e) {
 	const XDestroyWindowEvent *ev = &e->xdestroywindow;
 	int c;
@@ -410,11 +421,11 @@ drawtext(const char *text, unsigned long col[ColLast]) {
 }
 
 void *
-emallocz(size_t size) {
+ecalloc(size_t n, size_t size) {
 	void *p;
 
-	if(!(p = calloc(1, size)))
-		die("tabbed: cannot malloc\n");
+	if(!(p = calloc(n, size)))
+		die("tabbed: cannot calloc\n");
 	return p;
 }
 
@@ -463,16 +474,16 @@ focus(int c) {
 	sendxembed(c, XEMBED_WINDOW_ACTIVATE, 0, 0, 0);
 	xsettitle(win, clients[c]->name);
 
-	/* If sel is already c, change nothing. */
 	if(sel != c) {
 		lastsel = sel;
 		sel = c;
-		if(clients[c]->urgent && (wmh = XGetWMHints(dpy, clients[c]->win))) {
-			wmh->flags &= ~XUrgencyHint;
-			XSetWMHints(dpy, clients[c]->win, wmh);
-			clients[c]->urgent = False;
-			XFree(wmh);
-		}
+	}
+
+	if(clients[c]->urgent && (wmh = XGetWMHints(dpy, clients[c]->win))) {
+		wmh->flags &= ~XUrgencyHint;
+		XSetWMHints(dpy, clients[c]->win, wmh);
+		clients[c]->urgent = False;
+		XFree(wmh);
 	}
 
 	drawbar();
@@ -724,7 +735,7 @@ manage(Window w) {
 			}
 		}
 
-		c = emallocz(sizeof(*c));
+		c = ecalloc(1, sizeof *c);
 		c->win = w;
 
 		nclients++;
@@ -795,19 +806,19 @@ movetab(const Arg *arg) {
 	int c;
 	Client *new;
 
-	if(sel < 0 || (arg->i == 0))
-		return;
-
-	c = sel + arg->i;
-	while(c >= nclients)
-		c -= nclients;
-	while(c < 0)
+	c = (sel + arg->i) % nclients;
+	if(c < 0)
 		c += nclients;
 
-	new = clients[c];
-	clients[c] = clients[sel];
-	clients[sel] = new;
+	if(sel < 0 || (c == sel))
+		return;
 
+	new = clients[sel];
+	if(sel < c)
+		memmove(&clients[sel], &clients[sel+1], sizeof(Client *) * (c - sel));
+	else
+		memmove(&clients[c+1], &clients[c], sizeof(Client *) * (sel - c));
+	clients[c] = new;
 	sel = c;
 
 	drawbar();
@@ -932,7 +943,7 @@ void
 setcmd(int argc, char *argv[], int replace) {
 	int i;
 
-	cmd = emallocz((argc+3) * sizeof(*cmd));
+	cmd = ecalloc(argc + 3, sizeof *cmd);
 	if (argc == 0)
 		return;
 	for(i = 0; i < argc; i++)
