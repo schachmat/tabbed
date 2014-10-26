@@ -44,7 +44,7 @@ static Key keys[] = { \
 	{ MODKEY,           XK_odiaeresis, rotate,     { .i = -1 } },
 	{ MODKEY|ShiftMask, XK_odiaeresis, movetab,    { .i = -1 } },
 	{ MODKEY|ShiftMask, XK_adiaeresis, movetab,    { .i = +1 } },
-	{ MODKEY,           XK_w,          rotate,     { .i = 0 } },
+	{ MODKEY,           XK_f,          rotate,     { .i = 0 } },
 
 //	{ MODKEY,           XK_1,          move,       { .i = 0 } },
 //	{ MODKEY,           XK_2,          move,       { .i = 1 } },
