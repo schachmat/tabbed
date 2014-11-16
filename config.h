@@ -27,7 +27,7 @@ static Bool npisrelative  = True;
 		" | sed -e's@^ *\\(0x[0-9a-f]*\\) \"\\([^\"]*\\)\".*@\\1 \\2@'" \
 		" | tac - \"${HOME}/.$2/history\"" \
 		" | awk '!x[$0]++'" \
-		" | xargs -0 printf %b | dmenu -l 10`\"" \
+		" | xargs -0 printf %b | dmenu -i -l 10`\"" \
 		" && xprop -id $1 -f $0 8s -set $0 \"$prop\"", \
 		p, winid, clientbin, NULL \
 	} \
