@@ -1137,7 +1137,7 @@ unmanage(int c) {
 			lastsel--;
 		}
 
-		if(c == sel) {
+		if(c == sel && lastsel >= 0) {
 			focus(lastsel);
 		} else {
 			if(sel > c)
