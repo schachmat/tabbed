@@ -10,8 +10,10 @@ static const char* urgbgcolor   = "#073642";
 static const char* urgfgcolor   = "#dc322f";
 static const char before[]      = "<";
 static const char after[]       = ">";
-static const int  tabwidth      = 180;
+static const char titletrim[]   = "…";
+static const int  tabwidth      = 200;
 static const Bool foreground    = True;
+static       Bool urgentswitch  = False;
 
 /*
  * Where to place a new tab when it is opened. When npisrelative is True,
@@ -34,31 +36,18 @@ static Bool npisrelative  = True;
 }
 
 #define MODKEY Mod1Mask
-static Key keys[] = { \
-	/* modifier         key            function    argument */
-	{ MODKEY,           XK_z,          focusonce,  { 0 } },
-	{ MODKEY,           XK_z,          spawn,      { 0 } },
-	{ MODKEY,           XK_p,          spawn,      SETPROP("_TABBED_SELECT_TAB") },
+static Key keys[] = {
+	/* modifier             key            function     argument */
+	{ MODKEY,               XK_z,          focusonce,   { 0 } },
+	{ MODKEY,               XK_z,          spawn,       { 0 } },
 
-	{ MODKEY,           XK_adiaeresis, rotate,     { .i = +1 } },
-	{ MODKEY,           XK_odiaeresis, rotate,     { .i = -1 } },
-	{ MODKEY|ShiftMask, XK_odiaeresis, movetab,    { .i = -1 } },
-	{ MODKEY|ShiftMask, XK_adiaeresis, movetab,    { .i = +1 } },
-	{ MODKEY,           XK_f,          rotate,     { .i = 0 } },
+	{ MODKEY,               XK_adiaeresis, rotate,      { .i = +1 } },
+	{ MODKEY,               XK_odiaeresis, rotate,      { .i = -1 } },
+	{ MODKEY|ShiftMask,     XK_odiaeresis, movetab,     { .i = -1 } },
+	{ MODKEY|ShiftMask,     XK_adiaeresis, movetab,     { .i = +1 } },
+	{ MODKEY,               XK_f,          rotate,      { .i = 0 } },
 
-//	{ MODKEY,           XK_1,          move,       { .i = 0 } },
-//	{ MODKEY,           XK_2,          move,       { .i = 1 } },
-//	{ MODKEY,           XK_3,          move,       { .i = 2 } },
-//	{ MODKEY,           XK_4,          move,       { .i = 3 } },
-//	{ MODKEY,           XK_5,          move,       { .i = 4 } },
-//	{ MODKEY,           XK_6,          move,       { .i = 5 } },
-//	{ MODKEY,           XK_7,          move,       { .i = 6 } },
-//	{ MODKEY,           XK_8,          move,       { .i = 7 } },
-//	{ MODKEY,           XK_9,          move,       { .i = 8 } },
-//	{ MODKEY,           XK_0,          move,       { .i = 9 } },
+	{ MODKEY,               XK_p,          spawn,       SETPROP("_TABBED_SELECT_TAB") },
 
-	{ MODKEY,           XK_udiaeresis, killclient, { 0 } },
-
-//	{ 0,                XK_F11,        fullscreen, { 0 } },
+	{ MODKEY,               XK_udiaeresis, killclient,  { 0 } },
 };
-
