@@ -49,5 +49,5 @@ static Key keys[] = {
 
 	{ MODKEY,                XK_p,          spawn,       SETPROP("_TABBED_SELECT_TAB") },
 
-	{ ControlMask,           XK_w,          killclient,  { 0 } },
+	{ ControlMask,           XK_F4,         killclient,  { 0 } },
 };
