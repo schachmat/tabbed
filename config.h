@@ -50,6 +50,8 @@ static Key keys[] = {
 	{ ControlMask,           XK_t,          spawn,       { 0 } },
 	{ ControlMask,           XK_Tab,        rotate,      { .i = +1 } },
 	{ ControlMask|ShiftMask, XK_Tab,        rotate,      { .i = -1 } },
+	{ ControlMask,           XK_Page_Up,    rotate,      { .i = -1 } },
+	{ ControlMask,           XK_Page_Down,  rotate,      { .i = +1 } },
 	{ ControlMask|ShiftMask, XK_Page_Up,    movetab,     { .i = -1 } },
 	{ ControlMask|ShiftMask, XK_Page_Down,  movetab,     { .i = +1 } },
 	{ ControlMask,           XK_F4,         killclient,  { 0 } },
